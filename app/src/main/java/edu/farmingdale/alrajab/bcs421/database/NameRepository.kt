@@ -1,50 +1,34 @@
-package edu.farmingdale.alrajab.bcs421.database
 import android.content.Context
 import androidx.room.Room
+import androidx.room.RoomDatabase
 
-
-class NameRepository private constructor(context: Context) {
-    private val database : AppDatabase = Room.databaseBuilder(
-        context.applicationContext,
-        AppDatabase::class.java,
-        "person.db"
-    )
-        .allowMainThreadQueries()
-        .build()
-
+class NameRepository private constructor(private val userDao: UserDao) {
 
     companion object {
+        @Volatile
         private var instance: NameRepository? = null
 
         fun getInstance(context: Context): NameRepository {
-            if (instance == null) {
-                instance = NameRepository(context)
+            return instance ?: synchronized(this) {
+                val database = Room.databaseBuilder(
+                    context.applicationContext,
+                    AppDatabase::class.java, "my-database"
+                ).build()
+                instance = NameRepository(database.userDao())
+                instance!!
             }
-            return instance!!
         }
     }
 
-
-
-    private val usrDao = database.userDao()
-    init {
-        if (usrDao.getAll().isEmpty()) {
-            addUser(User("Moaath","Alrajab"))
-            addUser(User("James","Smith"))
-            addUser(User("Ben","Adams"))
-        }
+    fun addUser(user: User) {
+        userDao.insert(user)
     }
 
-
-    fun getUser(id: Long): User? = usrDao.getUser(id)
-
-    fun getAll(): List<User> = usrDao.getAll()
-
-    fun addUser(usr: User) {
-        usrDao.addUser(usr)
+    fun updateUser(user: User) {
+        userDao.update(user)
     }
 
-    fun deleteUser(usr: User) = usrDao.delete(usr)
-
-
+    fun getAllUsers(): List<User> {
+        return userDao.getAllUsers()
+    }
 }
